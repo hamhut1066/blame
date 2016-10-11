@@ -8,10 +8,10 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
     // This means that when all things are done, we can start randomly extracting the remaining keys, to see if we have left anything
     // (although technically it should be impossible for this to happen)
     var lib_type = get_type(tmap, root)
-    return JSON.stringify(lib_type)
+    return lib_type
 }
 
-
+// figure out this type
 function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
     // foreach key in object.
     var tmp = tmap.get(scope).map(function(vs, k) {

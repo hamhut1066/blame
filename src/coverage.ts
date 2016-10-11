@@ -36,36 +36,47 @@ export type ObjectType = Immutable.Map<Key, Immutable.List<TypeObject>>;
 type TimeoutID = number;
 
 var DEBUG = false;
+var output = true
 
-export var object_map: ObjectMap = <ObjectMap>Immutable.Map({});
+export var object_map: ObjectMap = <ObjectMap>Immutable.Map({})
 var timeoutID: TimeoutID;
-var root_key: Name;
 
-function touch(): void {
+export function RESET() {
+    object_map = <ObjectMap>Immutable.Map({})
+}
+export function outputTypes(val: boolean) {
+    output = val
+}
+
+function touch(root_key: string): void {
     if (timeoutID) {
         clearTimeout(timeoutID);
     }
     timeoutID = setTimeout(function() {
-        console.log(Infer.types(object_map, root_key))
+        if (output) {
+            console.log(JSON.stringify(Infer.types(object_map, root_key)))
+        }
     }, 50)
 }
 
 // name might have to be allowed to be undefined.
-export function wrap(value: any, name: string): any {
+export function wrap(value: any, name: string, root?: string): any {
     switch(simple_type(value)) {
     case Type.Object:
-        return wrap_obj(value, name);
+        return wrap_obj(value, name, root);
     default:
         return value
     }
 }
 
-function wrap_obj(value: any, name: string): any {
+function wrap_obj(value: any, name: string, root?: string): any {
 
-    root_key = root_key || name;
-    let me = object_map.get(name, <ObjectType> Immutable.Map());
+    // get the root key
+    var root_key = root || name;
+    console.log(root_key)
 
     function updateType(key: string, value: any, action: Action): ObjectType {
+        let me = object_map.get(name, <ObjectType> Immutable.Map());
         var res_type = me.get(key, Immutable.List<TypeObject>())
         let new_type: TypeObject = get_type(value, action);
         res_type = res_type.push(new_type);
@@ -82,22 +93,22 @@ function wrap_obj(value: any, name: string): any {
                 res = target
             }
 
-            me = updateType(key, res, Action.Get)
+            let me = updateType(key, res, Action.Get)
             object_map = object_map.set(name, me)
 
-            touch()
-            return wrap(res, name + '.' + key.toString());
+            touch(root_key)
+            return wrap(res, name + '.' + key.toString(), root_key);
         },
         set: function(target: any, key: string, value: any, receiver: any): any {
 
-            me = updateType(key, value, Action.Set)
+            let me = updateType(key, value, Action.Set)
             object_map = object_map.set(name, me)
 
             // set value to thing.
             Reflect.set(target, key, value)
 
             // return value
-            touch()
+            touch(root_key)
             return value
         }
     })

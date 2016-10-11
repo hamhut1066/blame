@@ -4,6 +4,8 @@ module.exports = {
   b: {
     c: 'something',
     d: true,
-    e: {}
+    e: {
+      f: "hello"
+    }
   }
 };

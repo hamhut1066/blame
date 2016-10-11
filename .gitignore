@@ -1,1 +1,7 @@
 /build/*
+node_modules
+*.log
+.bash_history
+.node_repl_history
+.npm
+.env

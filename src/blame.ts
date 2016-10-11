@@ -70,7 +70,7 @@ export function wrap(value: any, p: any, A: Type.IType, B: Type.IType): any {
   if(value instanceof Buffer) {
     return value;
   }
-  
+
   var a: Type.TypeKind = A.kind();
   var b: Type.TypeKind = B.kind();
 
@@ -141,7 +141,7 @@ export function wrap(value: any, p: any, A: Type.IType, B: Type.IType): any {
   if (a === Type.TypeKind.BoundTypeVariable && b === Type.TypeKind.AnyType) {
     return (<Type.BoundTypeVariable> A).unseal(value, p);
   }
-  
+
   return value;
 }
 
@@ -158,7 +158,7 @@ function wrap_fun(value: any, p: any, A: Type.FunctionType, B: Type.FunctionType
   if (typeof value !== "function") {
     return Tracking.blame(value,p)
   }
-  
+
   return new Proxy(value, {
     get: function(target, name, receiver) {
       if (name === 'toJSON') {
@@ -181,7 +181,7 @@ function wrap_fun(value: any, p: any, A: Type.FunctionType, B: Type.FunctionType
       var nodes = Tracking.createAppContextMutable(p);
       var pDom = nodes.dom;
       var pCod = nodes.cod;
-      
+
       var nArgs: number = args.length;
       var minArgs: number = A.requiredParameters.length;
       var maxArgs: number = (A.requiredParameters.length +
@@ -219,14 +219,14 @@ function wrap_fun(value: any, p: any, A: Type.FunctionType, B: Type.FunctionType
       var nodes = Tracking.createAppContextMutable(p);
       var pDom = nodes.dom;
       var pCod = nodes.cod;
-      
+
       var nArgs: number = args.length;
       var minArgs: number = A.requiredParameters.length;
       var maxArgs: number = (A.requiredParameters.length + A.optionalParameters.length);
 
       // Create the instance
       var instance = Object.create(target.prototype);
-      
+
       if (nArgs < minArgs) {
         Tracking.blame(null,pDom);
         Reflect.apply(target,instance, args);
@@ -342,14 +342,14 @@ function wrap_dict(value: any, p: any, A: Type.DictionaryType, B: Type.Dictionar
   if (!value) {
     return value;
   }
-  
+
   return new Proxy(value, {
     get: function (target: any, name: string, receiver: any): any {
       var getNode = Tracking.createPropContextMutable(
         Tracking.BLAME_POLARITY.POSITIVE,
         name,
         p);
-      
+
       if (name === 'toJSON') {
         return function () {
           return target;
@@ -384,7 +384,7 @@ function wrap_obj(value: any, p: any, A: Type.ObjectType, B: Type.ObjectType): a
   if (!value) {
     return value;
   }
-  
+
   return new Proxy(value, {
     get: function (target: any, name: string, receiver: any): any {
       var getNode = Tracking.createPropContextMutable(

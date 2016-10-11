@@ -1,5 +1,6 @@
 /// <reference path="../node_modules/typescript/lib/lib.es6.d.ts" />
 import Coverage = require("./coverage")
+import Immutable = require('immutable');
 
 //move type definitions into types.ts
 export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
@@ -12,13 +13,31 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
 
 
 function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
-    return tmap.get(scope).map(function(v, k) {
-        switch(v[0].type) {
-        case Coverage.Type.Object:
-            var new_scope = scope + '.' + k
-            return get_type(tmap, new_scope)
-        default:
-            return Coverage.inverse_type(v[0].type)
+    // foreach key in object.
+    var tmp = tmap.get(scope).map(function(vs, k) {
+
+        var is_obj = false
+        // foreach runtime type in key.
+        let types = vs.map(function(v) {
+            switch(v.type) {
+            case Coverage.Type.Object:
+                is_obj = true
+                var new_scope = scope + '.' + k
+                return get_type(tmap, new_scope)
+            default:
+                return Coverage.inverse_type(v.type)
+            }
+        }).toSet()
+
+        if (is_obj) {
+            if (types.size > 1) {
+                throw Error("An Object Type should not be unioned with a primitive type.")
+            }
+            return types.first()
+        } else {
+            return types.join('|')
         }
+
     })
+    return tmp;
 }

@@ -16,6 +16,11 @@ export enum Type {
     Object,
 }
 
+type TypeName = "integer"
+    | "string"
+    | "boolean"
+    | "object"
+
 enum Action {
     Set,
     Get
@@ -27,7 +32,7 @@ interface TypeObject {
 };
 
 export type ObjectMap = Immutable.Map<Name, ObjectType>;
-export type ObjectType = Immutable.Map<Key, [TypeObject]>;
+export type ObjectType = Immutable.Map<Key, Immutable.List<TypeObject>>;
 type TimeoutID = number;
 
 var DEBUG = false;
@@ -61,9 +66,9 @@ function wrap_obj(value: any, name: string): any {
     let me = object_map.get(name, <ObjectType> Immutable.Map());
 
     function updateType(key: string, value: any, action: Action): ObjectType {
-        var res_type = me.get(key, [] as [TypeObject])
+        var res_type = me.get(key, Immutable.List<TypeObject>())
         let new_type: TypeObject = get_type(value, action);
-        res_type.push(new_type);
+        res_type = res_type.push(new_type);
         me = me.set(key, res_type);
         return me
     }
@@ -99,14 +104,16 @@ function wrap_obj(value: any, name: string): any {
 }
 
 
-export function inverse_type(t: Type) {
+export function inverse_type(t: Type): TypeName {
     switch (t) {
     case Type.Integer:
-        return 'int'
+        return 'integer'
     case Type.String:
         return 'string'
     case Type.Boolean:
         return 'boolean'
+    case Type.Object:
+        return "object"
     default:
         throw Error('Unhandled Type: ' + t)
     }

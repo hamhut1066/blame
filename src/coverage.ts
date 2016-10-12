@@ -73,7 +73,6 @@ function wrap_obj(value: any, name: string, root?: string): any {
 
     // get the root key
     var root_key = root || name;
-    console.log(root_key)
 
     function updateType(key: string, value: any, action: Action): ObjectType {
         let me = object_map.get(name, <ObjectType> Immutable.Map());

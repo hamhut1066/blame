@@ -14,14 +14,12 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
 // figure out this type
 function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
     // foreach key in object.
-    var tmp = tmap.get(scope).map(function(vs, k) {
+    var tmp = tmap.get(scope, Immutable.Map<string, any>()).map(function(vs, k) {
 
-        var is_obj = false
         // foreach runtime type in key.
         let types = vs.map(function(v) {
             switch(v.type) {
             case Coverage.Type.Object:
-                is_obj = true
                 var new_scope = scope + '.' + k
                 return get_type(tmap, new_scope)
             default:

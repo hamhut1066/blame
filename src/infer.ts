@@ -27,15 +27,39 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
             }
         }).toSet()
 
-        if (is_obj) {
-            if (types.size > 1) {
-                throw Error("An Object Type should not be unioned with a primitive type.")
-            }
-            return types.first()
-        } else {
-            return types.join('|')
-        }
-
+        return construct_type(types)
     })
     return tmp;
+}
+
+function construct_type(type_arr: any) {
+    var type = Immutable.Map<string, any>({ // set type here
+        type: Immutable.List() // set type here
+    })
+
+    var count = 0
+    type_arr.forEach(function(v, k) {
+
+        if (v instanceof Immutable.Map) {
+            var local_key = 'object' + count
+            count += 1
+            type = type.set('type',
+                            type.get('type').push(local_key))
+
+            type = type.set(local_key, construct_map_type(v))
+        } else {
+            type = type.set('type',
+                            type.get('type').push(v).flatten().sort())
+        }
+    })
+    return type
+}
+
+function construct_map_type(lmap: any) {
+    var type = Immutable.Map()
+
+    lmap.forEach(function(v, k) {
+        type = type.set(k, construct_type(v));
+    })
+    return type
 }

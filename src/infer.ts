@@ -13,23 +13,31 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
 
 // figure out this type
 function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
-    // foreach key in object.
-    var tmp = tmap.get(scope, Immutable.Map<string, any>()).map(function(vs, k) {
+    var scoped_ref: any = tmap.get(scope, {
+        type: 'object-lit',
+        properties: Immutable.Map<String, Coverage.ObjectMap>(),
+        call: undefined
+    });
+    [].map(function(vs, k) {
 
         // foreach runtime type in key.
-        let types = vs.map(function(v) {
+        let types = vs.map(function(v: Coverage.Type) {
             switch(v.type) {
-            case Coverage.Type.Object:
+            case 'object':
                 var new_scope = scope + '.' + k
                 return get_type(tmap, new_scope)
             default:
-                return Coverage.inverse_type(v.type)
+                return v.type
             }
         }).toSet()
 
         return construct_type(types)
     })
-    return tmp;
+    return scoped_ref;
+}
+
+function func_type(name: string, f) {
+    return "hamish"
 }
 
 function construct_type(type_arr: any) {
@@ -41,8 +49,10 @@ function construct_type(type_arr: any) {
     type_arr.forEach(function(v, k) {
 
         if (v instanceof Immutable.Map) {
+            // non-simple type.
             var local_key = 'object' + count
             count += 1
+
             type = type.set('type',
                             type.get('type').push(local_key))
 

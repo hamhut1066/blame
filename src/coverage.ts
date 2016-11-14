@@ -167,8 +167,12 @@ function wrap_fun(value: any, name: string, parent?: string): any {
             ref.call = ref.call.push(function_lit)
 
             // add ref in parent
-            var parent_obj = object_map.get(parent)
-            var list = parent_obj.properties.get(rel_name)
+            var parent_obj = object_map.get(parent, {
+                type: 'object-lit',
+                properties: Immutable.Map<String, Immutable.List<Type>>(),
+                call: Immutable.List<FunctionLitType>()
+            })
+            var list = parent_obj.properties.get(rel_name, Immutable.List<Type>())
 
             list = list.push({
                 type: 'function',

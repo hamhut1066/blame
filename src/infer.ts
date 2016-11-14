@@ -15,29 +15,54 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
 function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
     var scoped_ref: any = tmap.get(scope, {
         type: 'object-lit',
-        properties: Immutable.Map<String, Coverage.ObjectMap>(),
-        call: undefined
+        properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
+        call: Immutable.List<Coverage.FunctionLitType>()
     });
-    [].map(function(vs, k) {
 
-        // foreach runtime type in key.
-        let types = vs.map(function(v: Coverage.Type) {
-            switch(v.type) {
-            case 'object':
+    // properties
+    var properties = scoped_ref.properties
+    var obj_types = properties.map(function(v, k) {
+
+        //extract types
+        var types = v.map(function(t) {
+            switch (t.type) {
+            case "object":
                 var new_scope = scope + '.' + k
                 return get_type(tmap, new_scope)
-            default:
-                return v.type
-            }
-        }).toSet()
+            case "function":
+                var new_scope = scope + '.' + k
+                return get_func_type(tmap, new_scope)
 
-        return construct_type(types)
+            default:
+                return t.type
+            }
+        }).sort().toSet()
+
+        return types
     })
-    return scoped_ref;
+
+    return obj_types
 }
 
-function func_type(name: string, f) {
-    return "hamish"
+
+
+function get_func_type(tmap: Coverage.ObjectMap, scope: string) {
+    var scoped_ref: any = tmap.get(scope, {
+        type: 'object-lit',
+        properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
+        call: Immutable.List<Coverage.FunctionLitType>()
+    });
+
+    // call
+    var calls = scoped_ref.call
+    var call_types = calls.map(function(v, k) {
+        return {
+            parameters: v.parameters.map(function(x) { return x.type.type }),
+            returnType: v.returnType.type
+        }
+    }).sort().toSet()
+
+    return call_types
 }
 
 function construct_type(type_arr: any) {

@@ -3,6 +3,7 @@
 import Immutable = require('immutable');
 import Reflect   = require("harmony-reflect");
 
+import todts     = require("./todts")
 import Infer     = require("./infer")
 import Tracking  = require("./tracking");
 
@@ -60,6 +61,7 @@ type BasicTypes
     | "boolean"
     | "void"
     | "any"
+    | "undefined"
 
 export interface BuiltinType {
     type: BasicTypes
@@ -101,9 +103,7 @@ function touch(root_key?: string): void {
     }
     timeoutID = setTimeout(function() {
         if (output) {
-            console.log(JSON.stringify(object_map))
-            const tmp = JSON.stringify(Infer.types(object_map, root_parent_key));
-            // console.error(tmp)
+            todts.print(Infer.types(object_map, root_parent_key));
         }
     }, 50)
 }
@@ -117,17 +117,11 @@ export function wrap(value: any, name: string, parent?: string): any {
         return wrap_obj(value, name, parent_key)
     case TypeEnum.FunctionRef:
         return wrap_fun(value, name, parent_key)
+    case TypeEnum.String:
+        return value
     default:
-        console.log('Skipping: ' + name);
         return value
     }
-}
-
-function updateType(parent: ObjectLitType, key: string, value: Type): ObjectLitType {
-    var me = parent.properties.get(key, <any> Immutable.List<Type>())
-    me = me.push(value)
-    parent.properties = parent.properties.set(key, me)
-    return parent
 }
 
 function wrap_fun(value: any, name: string, parent?: string): any {
@@ -176,9 +170,6 @@ function wrap_fun(value: any, name: string, parent?: string): any {
             var parent_obj = object_map.get(parent)
             var list = parent_obj.properties.get(rel_name)
 
-            console.log(parent)
-            console.log(rel_name)
-            console.log(JSON.stringify(parent_obj))
             list = list.push({
                 type: 'function',
                 action: Action.Apply
@@ -191,6 +182,13 @@ function wrap_fun(value: any, name: string, parent?: string): any {
             // return wrap(ret, name + '.' + 'ret', name)
         }
     })
+}
+
+function updateType(parent: ObjectLitType, key: string, value: Type): ObjectLitType {
+    var me = parent.properties.get(key, <any> Immutable.List<Type>())
+    me = me.push(value)
+    parent.properties = parent.properties.set(key, me)
+    return parent
 }
 
 function wrap_obj(value: any, name: string, root_key?: string): any {
@@ -209,7 +207,7 @@ function wrap_obj(value: any, name: string, root_key?: string): any {
             let ref = object_map.get(name, {
                 type: 'object-lit',
                 properties: Immutable.Map<String, Immutable.List<Type>>(),
-                call: undefined
+                call: Immutable.List<FunctionLitType>()
             })
             let me = updateType(ref, key, new_type)
             object_map = object_map.set(name, me)
@@ -219,12 +217,13 @@ function wrap_obj(value: any, name: string, root_key?: string): any {
         },
         set: function(target: any, key: string, value: any, receiver: any): any {
 
+
             let ref = object_map.get(name, {
                 type: 'object-lit',
                 properties: Immutable.Map<String, Immutable.List<Type>>(),
-                call: undefined
+                call: Immutable.List<FunctionLitType>()
             })
-            let me = updateType(ref, key, value)
+            let me = updateType(ref, key, get_type(value, Action.Set))
             object_map = object_map.set(name, me)
 
             // set value to thing.
@@ -263,6 +262,11 @@ function get_type(value: any, action: Action): Type {
     case TypeEnum.FunctionRef:
         return {
             type: 'function',
+            action: action
+        }
+    case TypeEnum.Undefined:
+        return {
+            type: 'undefined',
             action: action
         }
     default:

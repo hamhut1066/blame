@@ -1,0 +1,107 @@
+\documentclass[12pt]{article}
+\usepackage{lingmacros}
+\usepackage{tree-dvips}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{mycream}{rgb}{1,1,0.8}
+\definecolor{lightgray}{rgb}{.9,.9,.9}
+\definecolor{darkgray}{rgb}{.4,.4,.4}
+\definecolor{purple}{rgb}{0.65, 0.12, 0.82}
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else,
+    false, finally, for, function, if, in, instanceof, new, null, return,
+    switch, this, throw, true, try, typeof, var, void, while, with, declare, interface},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  ndkeywords={class, export, boolean, throw, implements, import, this, number, string},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywordstyle=\color{darkgray}\bfseries,
+  identifierstyle=\color{black},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  sensitive=true
+}
+
+\lstset{
+  language=JavaScript,
+  backgroundcolor=\color{lightgray},
+  extendedchars=true,
+  basicstyle=\footnotesize\ttfamily,
+  showstringspaces=false,
+  showspaces=false,
+  numbers=left,
+  numberstyle=\footnotesize,
+  numbersep=9pt,
+  tabsize=2,
+  breaklines=true,
+  showtabs=false,
+  captionpos=b
+}
+\begin{document}
+
+\section*{Introduction}
+Here I list a couple of examples of the entire (expected) flow of my project.
+Including inputs, and outputs.
+
+\paragraph{overview} The examples are set out in the following order:
+\begin{itemize}
+\item library module (javascript restricts one file per module)
+\item library test-suite
+\item expected generated d.ts file
+\end{itemize}
+
+I am currently planning on generating the d.ts file in as simple a manner as
+possible. I flesh out a more complex example at the end, showing how functions
+can have different type signatures depending on how the test-suite accesses the library.
+
+
+
+\clearpage
+\subsection{Basic Object}
+
+\lstinputlisting{examples/foo.js}
+\lstinputlisting{examples/foo_test.js}
+\lstinputlisting{examples/foo.d.ts}
+
+\clearpage
+\subsection{Function Object}
+
+\lstinputlisting{examples/func.js}
+\lstinputlisting{examples/func_test.js}
+\lstinputlisting{examples/func.d.ts}
+
+\clearpage
+\subsection{Nested Object}
+
+\lstinputlisting{examples/obj.js}
+\lstinputlisting{examples/obj_test.js}
+\lstinputlisting{examples/obj.d.ts}
+
+\clearpage
+\subsection{Nested Object Goal}
+
+\lstinputlisting{examples/obj_final.js}
+\lstinputlisting{examples/obj_final_test.js}
+\lstinputlisting{examples/obj_final.d.ts}
+
+\paragraph{Reasoning}
+I have structured the interfaces (which describe an object's properties) such
+that an interface that is accessible at $foo.bar$ will have the interface name $FooBar$.
+This means that there is a guarantee that no interface will clash. This also
+means that there may be duplications in interfaces. Currently I'm unsure whether
+or not this is a serious issue (or an issue at all). It should be possible to
+squash interfaces if they have the same internal structure.
+
+
+\end{document}
+
+
+%%% Local Variables:
+%%% TeX-engine: dviout
+%%% End:

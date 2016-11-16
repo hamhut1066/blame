@@ -1,0 +1,4 @@
+setting a function in a library breaks
+if we actually call the function a single time though, it works fine.
+
+Figure out the types, and statically define a Type for the passed in Object to todts

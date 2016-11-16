@@ -1,0 +1,12 @@
+{
+  "name": "libs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "ansicolors": "0.3.2",
+    "any-db": "",
+    "any-db-fake": "^0.0.3",
+    "tape": "^4.6.2"
+  }
+}

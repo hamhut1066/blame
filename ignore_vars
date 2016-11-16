@@ -1,0 +1,2 @@
+toJSON
+// keys that I want to ignore, as they are system variables

@@ -54,14 +54,21 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string) {
     });
 
     // call
+
+    var parameters = Immutable.List<Immutable.List<string>>()
+    var returnType = Immutable.List<string>()
     var calls = scoped_ref.call
     var call_types = calls.map(function(v, k) {
+        v.parameters.map(function(arg) {
+            // TODO: figure out how get correct index.
+        })
         return {
             parameters: v.parameters.map(function(x) { return x.type.type }),
             returnType: v.returnType.type
         }
     }).sort().toSet()
 
+    // console.error(call_types)
     return call_types
 }
 

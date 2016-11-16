@@ -37,7 +37,7 @@ export function generate(obj) {
 
 
 function construct_var(name: string, types: string[]) {
-    return "export var " + name + ": " + types.join(" | ")
+    return "export var " + name.toString() + ": " + types.join(" | ")
 }
 
 function construct_func(name: string, types: string[], return_type: string) {
@@ -46,12 +46,20 @@ function construct_func(name: string, types: string[], return_type: string) {
 
 
 function construct_obj_fragment(obj) {
-    var property_list = ["{"]
+    var property_list = []
     obj.forEach(function(v, k) {
-        property_list.push("    " + k + ": " + v.join("|"))
+        property_list.push(k + ": " + v.map(function(elem) {
+            if (elem instanceof Immutable.Set) {
+                return construct_obj_func_fragment(elem)
+            }
+            return elem
+        }).join("|"))
     })
-    property_list.push("}")
-    return property_list.join("\n")
+    return "{" + property_list.join(", ") + "}"
+}
+
+function construct_obj_func_fragment(elem) {
+    return elem
 }
 
 function construct_func_fragment(f) {

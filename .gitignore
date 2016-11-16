@@ -1,4 +1,5 @@
 /build/*
+src/*.js
 node_modules
 *.log
 .bash_history

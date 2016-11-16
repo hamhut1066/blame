@@ -24,9 +24,12 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
     var obj_types = properties.map(function(v, k) {
 
         //extract types
+        var property_type = undefined
         var types = v.map(function(t) {
+            property_type = update_type(property_type, t.type)
             switch (t.type) {
             case "object":
+                // console.log(k)
                 var new_scope = scope + '.' + k
                 return get_type(tmap, new_scope)
             case "function":
@@ -38,12 +41,56 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
             }
         }).sort().toSet()
 
-        return types
+        if (property_type === "function") {
+          return construct_func_type(types)
+        } else {
+          return {
+            type: property_type,
+            types
+          }
+        }
     })
 
     return obj_types
 }
 
+
+/*
+ * The idea with this function is that we have a hierarchy:
+ * object > function > simple type
+ * This means that we want the type with the
+ * highest priority that a variable has taken on.
+ */
+function update_type(curr, new_type) {
+  if (curr === "object") { return curr }
+  if (new_type === "object") { return new_type }
+  if (curr === "function") { return curr }
+  return new_type
+}
+
+function construct_func_type(types) {
+  // TODO: fix this issue where we are getting duplicate entries.
+  var parameters = Immutable.List<Immutable.Set<string>>()
+  var returnType = Immutable.Set<string>()
+  var types = types.first()
+  types.forEach(function(v) {
+    // params
+    v.parameters.forEach(function(v, i) {
+      var arg = parameters.get(i, Immutable.Set<string>())
+      arg = arg.add(v)
+      parameters = parameters.set(i, arg)
+    })
+    // returnType
+
+    returnType = returnType.add(v.returnType)
+  })
+
+  return {
+    type: 'function',
+    parameters: parameters,
+    returnType: returnType
+  }
+}
 
 
 function get_func_type(tmap: Coverage.ObjectMap, scope: string) {
@@ -68,7 +115,7 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string) {
         }
     }).sort().toSet()
 
-    // console.error(call_types)
+    // TODO: actually make the function type inference do the right thing!
     return call_types
 }
 

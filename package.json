@@ -1,15 +1,16 @@
 {
-    "name": "blame-js",
-    "version": "v0.1.0",
-    "dependencies": {
-        "typescript": "",
-        "immutable": "",
-        "harmony-reflect": "",
-        "mocha": "",
-        "chai": ""
-    },
-    "scripts": {
-        "test": "mocha test/test.js",
-        "install": "sh build.sh"
-    }
+  "name": "blame-js",
+  "version": "v0.1.0",
+  "dependencies": {
+    "chai": "",
+    "harmony-reflect": "",
+    "immutable": "",
+    "mocha": "",
+    "tslint": "^3.15.1",
+    "typescript": ""
+  },
+  "scripts": {
+    "test": "mocha test/test.js",
+    "install": "sh build.sh"
+  }
 }

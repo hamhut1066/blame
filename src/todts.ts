@@ -7,44 +7,84 @@ export function print(obj) {
     })
 }
 
-
+/*
+ * The top level object has different properties to all nested objects,
+ * so we want to treat it a little differently.
+ *
+ * TODO: I also need to figure out the types for this code.
+ *
+ * The first stage just needs to figure out whether we have a top level function or not.
+ */
 export function generate(obj) {
     return obj.map(function(v, k) {
         var is_function = false
         var ret_arr = []
         var return_type = undefined
-        var __ = v.map(function(sv) {
-            if (sv instanceof Immutable.Map) {
-                // pass, but probably recur
-                ret_arr.push(construct_obj_fragment(v.first()))
-            } else if (sv instanceof Immutable.Set) {
-                // this is a function
-                is_function = true
-                var tmp = construct_func_fragment(v.first().first())
-                ret_arr.push(tmp.parameters)
-                return_type = tmp.returnType
-            } else {
-                ret_arr.push(sv)
-            }
-        })
-        if (!is_function) {
-            return construct_var(k, ret_arr)
-        } else {
-            return construct_func(k, ret_arr, return_type)
+        switch (v.type) {
+          case "function":
+            return construct_func(k, v.parameters, v.returnType)
+          case "object":
+            return construct_obj(k, v.types)
+          default:
+            return construct_var(k, v.types)
         }
     })
 }
 
 
-function construct_var(name: string, types: string[]) {
-    return "export var " + name.toString() + ": " + types.join(" | ")
+function construct_obj(name: string, types) {
+  return "export var " + name.toString() + ": " + types.map(generate_obj).join("|")
 }
 
 function construct_func(name: string, types: string[], return_type: string) {
-    return "export function " + name + "(" + types.join(", ") + "): " + return_type
+    // console.log(JSON.stringify(types))
+    return "export function " + name + "(" + construct_func_params(types) + "): " + return_type.join("|")
+}
+
+function construct_func_params(params) {
+  var args = []
+  params.forEach(function(v) {
+    args.push(v.join("|"))
+  }
+  return args.join(", ")
+}
+
+function construct_var(name: string, types: string[]) {
+    return "export var " + name.toString() + ": " + types.join("|")
+}
+
+export function generate_obj(obj) {
+    if (obj instanceof Immutable.Map) {
+        var type_list = []
+        obj.forEach(function(v, k) {
+            var is_function = false
+            var ret_arr = []
+            var return_type = undefined
+            switch (v.type) {
+              case "function":
+                break
+              case "object":
+                type_list.push(k + ": " + construct_obj_prop(v.types))
+                break
+              default:
+                type_list.push(k + ": " + construct_var_prop(k, v.types))
+                break
+            }
+        })
+        return "{" + type_list.join(", ") + "}"
+    } else return obj
 }
 
 
+function construct_obj_prop(types) {
+  // console.error(JSON.stringify(types))
+  return generate_obj(types.first())
+}
+
+function construct_var_prop(name, types) {
+  return types.join("|")
+}
+/*
 function construct_obj_fragment(obj) {
     var property_list = []
     obj.forEach(function(v, k) {
@@ -68,3 +108,4 @@ function construct_func_fragment(f) {
         returnType: f.returnType
     }
 }
+*/

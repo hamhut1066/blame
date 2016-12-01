@@ -7,7 +7,9 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
     // as tmap is a single depth map, the <k,v> pair can be deleted when it, and all it's dependencies have been dealt with.
     // This means that when all things are done, we can start randomly extracting the remaining keys, to see if we have left anything
     // (although technically it should be impossible for this to happen)
+    console.log(JSON.stringify(tmap))
     var lib_type = get_type(tmap, root)
+    console.log(JSON.stringify(lib_type))
     return lib_type
 }
 

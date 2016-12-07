@@ -2,14 +2,14 @@
 import Coverage = require("./coverage")
 import Immutable = require('immutable');
 
-//move type definitions into types.ts
+//TODO: move type definitions into types.ts
 export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
     // as tmap is a single depth map, the <k,v> pair can be deleted when it, and all it's dependencies have been dealt with.
     // This means that when all things are done, we can start randomly extracting the remaining keys, to see if we have left anything
     // (although technically it should be impossible for this to happen)
-    console.log(JSON.stringify(tmap))
+    // console.log(JSON.stringify(tmap))
     var lib_type = get_type(tmap, root)
-    console.log(JSON.stringify(lib_type))
+    // console.log(JSON.stringify(lib_type))
     return lib_type
 }
 
@@ -30,24 +30,21 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
         var types = v.map(function(t) {
             property_type = update_type(property_type, t.type)
             switch (t.type) {
-            case "object":
-                // console.log(k)
-                var new_scope = scope + '.' + k
-                return get_type(tmap, new_scope)
-            case "function":
-                var new_scope = scope + '.' + k
-                return get_func_type(tmap, new_scope)
+            case "object-ref":
+                return get_type(tmap, t.name)
+            case "function-ref":
+                return get_func_type(tmap, t.name)
 
             default:
                 return t.type
             }
         }).sort().toSet()
 
-        if (property_type === "function") {
+        if (property_type === "function-ref") {
           return construct_func_type(types)
         } else {
           return {
-            type: property_type,
+            type: property_type === "object-ref" ? "object" : "builtin",
             types
           }
         }
@@ -64,9 +61,9 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
  * highest priority that a variable has taken on.
  */
 function update_type(curr, new_type) {
-  if (curr === "object") { return curr }
-  if (new_type === "object") { return new_type }
-  if (curr === "function") { return curr }
+  if (curr === "object-ref") { return curr }
+  if (new_type === "object-ref") { return new_type }
+  if (curr === "function-ref") { return curr }
   return new_type
 }
 
@@ -95,7 +92,7 @@ function construct_func_type(types) {
 }
 
 
-function get_func_type(tmap: Coverage.ObjectMap, scope: string) {
+function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
     var scoped_ref: any = tmap.get(scope, {
         type: 'object-lit',
         properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),

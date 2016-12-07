@@ -17,9 +17,6 @@ export function print(obj) {
  */
 export function generate(obj) {
     return obj.map(function(v, k) {
-        var is_function = false
-        var ret_arr = []
-        var return_type = undefined
         switch (v.type) {
           case "function":
             return construct_func(k, v.parameters, v.returnType)
@@ -38,7 +35,7 @@ function construct_obj(name: string, types) {
 
 function construct_func(name: string, types: string[], return_type: string[]) {
     // console.log(JSON.stringify(types))
-    return "export function " + name + "(" + construct_func_params(types) + "): " + return_type.join("|")
+    return "export function " + name + "(" + construct_func_params(types) + "): " + (return_type.join("|") || "void")
 }
 
 function construct_func_params(params) {
@@ -62,6 +59,8 @@ export function generate_obj(obj) {
             var return_type = undefined
             switch (v.type) {
               case "function":
+                console.error('unhandled function property for objects')
+                type_list.push(k + construct_func_prop(v))
                 break
               case "object":
                 type_list.push(k + ": " + construct_obj_prop(v.types))
@@ -75,6 +74,14 @@ export function generate_obj(obj) {
     } else return obj
 }
 
+
+function construct_func_prop(v) {
+    var params = v.parameters.map(function(arg) {
+        return arg.join("|")
+    }).join(", ")
+    var return_type = v.returnType.join("|") || "void"
+    return "(" + params + "): " + return_type
+}
 
 function construct_obj_prop(types) {
   // console.error(JSON.stringify(types))

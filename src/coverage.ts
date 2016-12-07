@@ -238,12 +238,14 @@ function wrap_obj(value: any, name: string, root_key?: string): any {
                 properties: Immutable.Map<String, Immutable.List<Type>>(),
                 call: Immutable.List<FunctionLitType>()
             })
-            let me = updateType(ref, key, get_type(value, Action.Set))
+            var new_type = get_type(value, Action.Set)
+            let me = updateType(ref, key, new_type)
             object_map = object_map.set(name, me)
 
             // set value to thing.
             Reflect.set(target, key, value)
 
+            cache = cache.set(key, wrap(value, (<any>new_type).name || name + '.' + key.toString(), name))
             // return value
             touch(root_key)
             return value

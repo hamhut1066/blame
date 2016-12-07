@@ -36,7 +36,7 @@ function construct_obj(name: string, types) {
   return "export var " + name.toString() + ": " + types.map(generate_obj).join("|")
 }
 
-function construct_func(name: string, types: string[], return_type: string) {
+function construct_func(name: string, types: string[], return_type: string[]) {
     // console.log(JSON.stringify(types))
     return "export function " + name + "(" + construct_func_params(types) + "): " + return_type.join("|")
 }
@@ -45,7 +45,7 @@ function construct_func_params(params) {
   var args = []
   params.forEach(function(v) {
     args.push(v.join("|"))
-  }
+  })
   return args.join(", ")
 }
 

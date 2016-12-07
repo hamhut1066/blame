@@ -5,6 +5,8 @@ var assert = require('assert')
   , open = colors.open
   , close = colors.close
 
+colors.open.x = function() {}
+colors.open.x(12)
 console.log('Foreground colors ..');
 
 assert.equal(colors.white('printed in white'), '\u001b[37mprinted in white\u001b[39m');
@@ -67,5 +69,6 @@ console.log('Close ...');
 
 assert.equal(close.black, '\u001b[39m');
 assert.equal(close.bgYellow, '\u001b[49m');
+
 
 console.log('OK');

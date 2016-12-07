@@ -1,8 +1,9 @@
 // test-suite obj_final.js
-var obj = require('./examples/obj_final.js');
+var Coverage = require('../build/coverage')
+var obj = Coverage.wrap(require('./obj_final.js'), 'obj_final')
 
 obj.Length.toCm(obj.Length.Const.one);
-obj.Length.toCm('hello');
+obj.Length.toCm('hello', true);
 
 
 // note no toIn never applied to a string,

@@ -18,7 +18,8 @@ export enum TypeEnum {
     Object,
     Undefined,
     FunctionRef,
-    FunctionLit
+    FunctionLit,
+    Array
 }
 
 enum Action {
@@ -33,8 +34,26 @@ export type Type
     | ObjectLitType
     | FunctionRefType
     | FunctionLitType
+    | UndefinedType
+    | ArrayRefType
+    | ArrayLitType
 
 export type ObjectMap = Immutable.Map<Name, ObjectLitType>;
+
+interface ArrayLitType {
+    type: 'array-lit',
+    internal: Immutable.List<Type>
+}
+
+interface ArrayRefType {
+    type: 'array-ref',
+    action: Action,
+    name: string
+}
+
+interface UndefinedType {
+    type: 'undefined'
+}
 
 interface ObjectLitType {
     type: 'object-lit',
@@ -119,6 +138,8 @@ export function wrap(value: any, name: string, parent?: string): any {
         return wrap_obj(value, name, parent_key)
     case TypeEnum.FunctionRef:
         return wrap_fun(value, name, parent_key)
+    case TypeEnum.Array:
+        return wrap_arr(value, name, parent_key)
     case TypeEnum.String:
         return value
     default:
@@ -152,7 +173,11 @@ function wrap_fun(value: any, name: string, parent?: string): any {
                 }
             }))
 
-            var ret = Reflect.apply(target, thisValue, args)
+            var wrapped_args = args.map(function(arg, index) {
+                var lname: any = arg_types.get(index).type
+                return wrap(arg, lname.name || name + '#' + index , name)
+            })
+            var ret = Reflect.apply(target, thisValue, wrapped_args)
             const ret_type = get_type(ret, Action.Get)
 
             var function_lit: FunctionLitType = {
@@ -185,8 +210,8 @@ function wrap_fun(value: any, name: string, parent?: string): any {
             object_map = object_map.set(name, ref)
 
             touch()
-            return ret
-            // return wrap(ret, name + '.' + 'ret', name)
+            // return ret
+            return wrap(ret, name + '.' + 'ret', name)
         }
     })
 }
@@ -225,7 +250,7 @@ function wrap_obj(value: any, name: string, root_key?: string): any {
             object_map = object_map.set(name, me)
 
             touch(root_key)
-            // the new_type expression below is knonw to have name either as defined or undefined.
+            // the new_type expression below is known to have name either as defined or undefined.
             var ret = wrap(res, (<any>new_type).name || name + '.' + key.toString(), name);
             cache = cache.set(key, ret)
             return ret
@@ -246,6 +271,65 @@ function wrap_obj(value: any, name: string, root_key?: string): any {
             Reflect.set(target, key, value)
 
             cache = cache.set(key, wrap(value, (<any>new_type).name || name + '.' + key.toString(), name))
+            // return value
+            touch(root_key)
+            return value
+        }
+    })
+}
+
+/* Reserved words in the array */
+var arr_reserved = Immutable.List([
+    'length',
+    'valueOf'
+])
+function wrap_arr(value: any, name: string, root_key?: string): any {
+    return new Proxy(value, {
+        get: function(target: any, key: string, receiver: any): any {
+
+            var res = Reflect.get(target,key);
+            var ret = res
+            var new_type: Type = {type: 'undefined'}
+            if (!arr_reserved.includes(key)) {
+                if (typeof key === "symbol") {
+                    res = target
+                }
+
+                var new_type = get_type(res, Action.Get)
+
+                let ref = object_map.get(name, {
+                    type: 'object-lit',
+                    properties: Immutable.Map<String, Immutable.List<Type>>(),
+                    call: Immutable.List<FunctionLitType>()
+                })
+                let me = updateType(ref, key, new_type)
+                object_map = object_map.set(name, me)
+
+                ret = wrap(res, (<any>new_type).name || name + '.' + key.toString(), name);
+            }
+
+
+
+            touch(root_key)
+            // the new_type expression below is known to have name either as defined or undefined.
+            return ret
+        },
+        set: function(target: any, key: string, value: any, receiver: any): any {
+
+
+            if (!arr_reserved.includes(key)) {
+                let ref = object_map.get(name, {
+                    type: 'object-lit',
+                    properties: Immutable.Map<String, Immutable.List<Type>>(),
+                    call: Immutable.List<FunctionLitType>()
+                })
+                var new_type = get_type(value, Action.Set)
+                let me = updateType(ref, key, new_type)
+                object_map = object_map.set(name, me)
+            }
+            // set value to thing.
+            Reflect.set(target, key, value)
+
             // return value
             touch(root_key)
             return value
@@ -289,6 +373,12 @@ function get_type(value: any, action: Action): Type {
             action: action,
             name: gensym('function')
         }
+    case TypeEnum.Array:
+        return {
+            type: 'array-ref',
+            action: action,
+            name: gensym('array')
+        }
     case TypeEnum.Undefined:
         return {
             type: 'undefined',
@@ -307,6 +397,8 @@ function simple_type(value: any): TypeEnum {
         return TypeEnum.Integer
     } else if (is_string(value)) {
         return TypeEnum.String
+    } else if (is_array(value)) {
+        return TypeEnum.Array
     } else if (is_object(value)) {
         return TypeEnum.Object
     } else if (is_undefined(value)) {
@@ -344,4 +436,8 @@ function is_undefined(value: any) {
 
 function is_function(value: any) {
     return typeof(value) === "function"
+}
+
+function is_array(value: any) {
+    return typeof(value) === "object" && value instanceof Array
 }

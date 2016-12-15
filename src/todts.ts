@@ -1,4 +1,5 @@
 import Immutable = require('immutable');
+import Coverage = require("./coverage")
 
 export function print(obj) {
     var str = generate(obj)
@@ -21,7 +22,8 @@ export function generate(obj) {
           case "function":
             return construct_func(k, v.parameters, v.returnType)
           case "object":
-            return construct_obj(k, v.types)
+          case 'array':
+            return construct_obj(k, v.types, v.type)
           default:
             return construct_var(k, v.types)
         }
@@ -29,21 +31,28 @@ export function generate(obj) {
 }
 
 
-function construct_obj(name: string, types) {
-  return "export var " + name.toString() + ": " + types.map(generate_obj).join("|")
+function construct_obj(name: string, types, t: string) {
+    return "export var " + name.toString() + ": " + types.map(generate_obj).join("|") + (t === "array" ? "[]" : "")
 }
 
 function construct_func(name: string, types: string[], return_type: string[]) {
-    // console.log(JSON.stringify(types))
     return "export function " + name + "(" + construct_func_params(types) + "): " + (return_type.join("|") || "void")
 }
 
 function construct_func_params(params) {
   var args = []
   params.forEach(function(v) {
-    args.push(v.join("|"))
+      args.push(v.map(deconstruct).join("|"))
   })
   return args.join(", ")
+}
+
+function deconstruct(param) {
+    if (typeof param === "object") {
+        return '(' + param.parameters.join(', ') + '): ' + param.returnType
+    } else {
+        return param
+    }
 }
 
 function construct_var(name: string, types: string[]) {
@@ -59,19 +68,26 @@ export function generate_obj(obj) {
             var return_type = undefined
             switch (v.type) {
               case "function":
-                console.error('unhandled function property for objects')
-                type_list.push(k + construct_func_prop(v))
+                type_list.push(k.toString() + construct_func_prop(v))
+                break
+              case "array":
+                type_list.push(k.toString() + ": " + construct_obj_prop(v.types) + "[]")
                 break
               case "object":
-                type_list.push(k + ": " + construct_obj_prop(v.types))
+                type_list.push(k.toString() + ": " + construct_obj_prop(v.types))
                 break
               default:
-                type_list.push(k + ": " + construct_var_prop(k, v.types))
+                type_list.push(k.toString() + ": " + construct_var_prop(k, v.types))
                 break
             }
         })
         return "{" + type_list.join(", ") + "}"
-    } else return obj
+    } else if (typeof obj === "object") {
+        if (obj.type === "array") return construct_obj_prop(obj.types) + "[]"
+        return "UNKNOWN"
+    } else {
+        return obj
+    }
 }
 
 

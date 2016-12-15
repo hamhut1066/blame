@@ -7,9 +7,9 @@ export function types(tmap: Coverage.ObjectMap, root: Coverage.Name): any {
     // as tmap is a single depth map, the <k,v> pair can be deleted when it, and all it's dependencies have been dealt with.
     // This means that when all things are done, we can start randomly extracting the remaining keys, to see if we have left anything
     // (although technically it should be impossible for this to happen)
-    // console.log(JSON.stringify(tmap))
+    // console.error(JSON.stringify(tmap))
     var lib_type = get_type(tmap, root)
-    // console.log(JSON.stringify(lib_type))
+    // console.error(JSON.stringify(lib_type))
     return lib_type
 }
 
@@ -34,6 +34,9 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
                 return get_type(tmap, t.name)
             case "function-ref":
                 return get_func_type(tmap, t.name)
+            case "array-ref":
+                var tmp = get_arr_type(tmap, t.name)
+                return tmp
 
             default:
                 return t.type
@@ -41,10 +44,20 @@ function get_type(tmap: Coverage.ObjectMap, scope: Coverage.Name): any {
         }).sort().toSet()
 
         if (property_type === "function-ref") {
-          return construct_func_type(types)
+            return construct_func_type(tmap, types)
+        } else if (property_type === "object-ref") {
+            return {
+                type: "object",
+                types
+            }
+        } else if (property_type === "array-ref") {
+            return {
+                type: "array",
+                types
+            }
         } else {
           return {
-            type: property_type === "object-ref" ? "object" : "builtin",
+            type: "builtin",
             types
           }
         }
@@ -67,17 +80,17 @@ function update_type(curr, new_type) {
   return new_type
 }
 
-function construct_func_type(types) {
+function construct_func_type(tmap, types) {
   // TODO: fix this issue where we are getting duplicate entries.
   var parameters = Immutable.List<Immutable.Set<string>>()
   var returnType = Immutable.Set<string>()
   var types = types.first()
   types.forEach(function(v) {
     // params
-    v.parameters.forEach(function(v, i) {
-      var arg = parameters.get(i, Immutable.Set<string>())
-      arg = arg.add(v)
-      parameters = parameters.set(i, arg)
+    v.parameters.forEach(function(v, i, rest) {
+        var arg = parameters.get(i, Immutable.Set<string>())
+        arg = arg.add(v)
+        parameters = parameters.set(i, arg)
     })
     // returnType
 
@@ -93,6 +106,9 @@ function construct_func_type(types) {
 
 
 function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
+    if (scope === undefined) {
+        throw Error()
+    }
     var scoped_ref: any = tmap.get(scope, {
         type: 'object-lit',
         properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
@@ -109,13 +125,58 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
             // TODO: figure out how get correct index.
         })
         return {
-            parameters: v.parameters.map(function(x) { return x.type.type }),
+            parameters: v.parameters.map(function(x) {
+                var type = x.type.type
+                switch (type) {
+                case "function-ref":
+                    var tmp = get_func_type(tmap, x.type.name).first()
+                    return {
+                        type: 'function',
+                        parameters: tmp.parameters,
+                        returnType: tmp.returnType
+                    }
+                default:
+                    return x.type.type
+                }
+            }),
             returnType: v.returnType.type
         }
     }).sort().toSet()
 
     // TODO: actually make the function type inference do the right thing!
     return call_types
+}
+
+/* This function assumes that every property will be the same (as any properly behaved array should). */
+function get_arr_type(tmap: Coverage.ObjectMap, scope: string) {
+    var scoped_ref: any = tmap.get(scope, {
+        type: 'object-lit',
+        properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
+        call: Immutable.List<Coverage.FunctionLitType>()
+    });
+
+    // properties
+    var properties = scoped_ref.properties
+    var types = properties.first()
+    var tmp = types.map(function(val) {
+        switch (val.type) {
+        case "object-ref":
+            var arro = get_type(tmap, val.name)
+            return Immutable.Map(arro)
+        case "function-ref":
+            return get_func_type(tmap, val.name)
+        case "array-ref":
+            var arr_ref = get_arr_type(tmap, val.name)
+            return {
+                type: 'array',
+                types: Immutable.List([arr_ref])
+            }
+
+        default:
+            return val.type
+        }
+    }).sort().first()
+    return tmp
 }
 
 function construct_type(type_arr: any) {

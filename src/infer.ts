@@ -114,7 +114,10 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
         properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
         call: Immutable.List<Coverage.FunctionLitType>()
     });
+    return extract_func_type(tmap, scoped_ref)
+}
 
+function extract_func_type(tmap: Coverage.ObjectMap, scoped_ref: any) {
     // call
 
     var parameters = Immutable.List<Immutable.List<string>>()
@@ -129,17 +132,47 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
                 var type = x.type.type
                 switch (type) {
                 case "function-ref":
-                    var tmp = get_func_type(tmap, x.type.name).first()
+                    var tmp = get_func_type(tmap, x.type.name).first() || { parameters: [], returnType: { type: undefined } }
                     return {
                         type: 'function',
                         parameters: tmp.parameters,
                         returnType: tmp.returnType
                     }
+                case "object-ref":
+                    var tmp = get_type(tmap, x.type.name)
+                    return {
+                        type: 'object',
+                        types: Immutable.List([tmp])
+                    }
+                case "array-ref":
+                    var tmp = get_arr_type(tmap, x.type.name)
+                    return {
+                        type: 'array',
+                        internal: Immutable.List([tmp])
+                    }
                 default:
                     return x.type.type
                 }
             }),
-            returnType: v.returnType.type
+            returnType: (function() {
+                switch (v.returnType.type) {
+                case "function-ref":
+                    var tmp = get_func_type(tmap, v.returnType.name).first()
+                    return {
+                        type: 'function',
+                        parameters: tmp.parameters,
+                        returnType: tmp.returnType
+                    }
+                case "object-ref":
+                    var tmp = get_type(tmap, v.returnType.name)
+                    return {
+                        type: 'object',
+                        types: Immutable.List([tmp])
+                    }
+                default:
+                    return v.returnType.type
+                }
+            })()
         }
     }).sort().toSet()
 
@@ -149,11 +182,11 @@ function get_func_type(tmap: Coverage.ObjectMap, scope: string): any {
 
 /* This function assumes that every property will be the same (as any properly behaved array should). */
 function get_arr_type(tmap: Coverage.ObjectMap, scope: string) {
-    var scoped_ref: any = tmap.get(scope, {
-        type: 'object-lit',
-        properties: Immutable.Map<String, Immutable.List<Coverage.Type>>(),
-        call: Immutable.List<Coverage.FunctionLitType>()
-    });
+    var scoped_ref: any = tmap.get(scope);
+
+    if (scoped_ref === undefined) {
+            return "A"
+    }
 
     // properties
     var properties = scoped_ref.properties

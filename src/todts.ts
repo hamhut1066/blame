@@ -1,11 +1,12 @@
 import Immutable = require('immutable');
-import Coverage = require("./coverage")
+// import Coverage  = require("./coverage")
+// import fs        = require('fs')
 
 export function print(obj) {
     var str = generate(obj)
-    str.forEach(function(v) {
-        console.error(v)
-    })
+    var output = Array.from(str.values()).join("\n")
+    console.error(output)
+    // fs.writeFile('.d.ts', output)
 }
 
 /*
@@ -36,7 +37,7 @@ function construct_obj(name: string, types, t: string) {
 }
 
 function construct_func(name: string, types: string[], return_type: string[]) {
-    return "export function " + name + "(" + construct_func_params(types) + "): " + (return_type.join("|") || "void")
+    return "export function " + name + "(" + construct_func_params(types) + "): " + (return_type.map(make_type).join("|") || "void")
 }
 
 function construct_func_params(params) {
@@ -48,11 +49,34 @@ function construct_func_params(params) {
 }
 
 function deconstruct(param) {
-    if (typeof param === "object") {
-        return '(' + param.parameters.join(', ') + '): ' + param.returnType
-    } else {
+    switch (param.type) {
+    case "function":
+        return '(' + param.parameters.map(make_type).join(', ') + '): ' + make_type(param.returnType)
+    case "object":
+        console.error('NOT IMPLEMENTED Object')
+        // return '(' + param.parameters.join(', ') + '): ' + param.returnType
+    case "array":
+        console.error("ARRAYS Not implemented")
+    default:
         return param
     }
+}
+
+function make_type(t) {
+    switch (t.type) {
+    case "function":
+        return construct_func_params(t)
+    case "object":
+        return construct_obj_prop(t.types)
+    case "array":
+        return construct_arr_params(t)
+    default:
+        return t
+    }
+}
+
+function construct_arr_params(a) {
+    return a.internal.map(make_type).join("|") + "[]"
 }
 
 function construct_var(name: string, types: string[]) {
@@ -93,14 +117,13 @@ export function generate_obj(obj) {
 
 function construct_func_prop(v) {
     var params = v.parameters.map(function(arg) {
-        return arg.join("|")
+        return make_type(arg).join("|")
     }).join(", ")
-    var return_type = v.returnType.join("|") || "void"
+    var return_type = v.returnType.map(make_type).join("|") || "void"
     return "(" + params + "): " + return_type
 }
 
 function construct_obj_prop(types) {
-  // console.error(JSON.stringify(types))
   return generate_obj(types.first())
 }
 

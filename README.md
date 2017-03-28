@@ -25,6 +25,9 @@ Note: All directories are relative to the root of the repository.
 
 # Requirements
 
+
+The below requirements are needed if you want to pull all the repos again. I have bundled them all and put them here: (insert link)
+where you can download them in an archived format.
 ```
 apt install ruby-dev
 gem install --user json # add this to the path.

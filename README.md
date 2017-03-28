@@ -12,6 +12,9 @@ Then you navigate into `lib_tests/libs/` and run `yarn` again. (testing library 
 
 Then some symlink magic needs to happen.
 For every library that you want to test, you need to symlink `/lib_tests/libs/node_modules` to `/lib_tests/tests/ansicolors/node_modules` (example)
+```
+ln -s ../../libs/node_modules/ansicolors node_modules/
+```
 
 
 The final thing that needs doing is to navigate to `/lib_tests/libs/node_modules` and symlink `/build` to the name `blame`.
@@ -22,5 +25,7 @@ Note: All directories are relative to the root of the repository.
 
 # Requirements
 
+```
 apt install ruby-dev
 gem install --user json # add this to the path.
+```

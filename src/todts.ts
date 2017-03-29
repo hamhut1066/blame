@@ -49,12 +49,14 @@ function construct_func_params(params) {
 }
 
 function deconstruct(param) {
+
     switch (param.type) {
     case "function":
         return '(' + param.parameters.map(make_type).join(', ') + '): ' + make_type(param.returnType)
     case "object":
         console.error('NOT IMPLEMENTED Object')
         // return '(' + param.parameters.join(', ') + '): ' + param.returnType
+        return "Object"
     case "array":
         console.error("ARRAYS Not implemented")
     default:
@@ -70,6 +72,11 @@ function make_type(t) {
         return construct_obj_prop(t.types)
     case "array":
         return construct_arr_params(t)
+    case undefined:
+        // catching an edge case that is an error that has propogated from a previous phase.
+        if (typeof t === "object") {
+            return "{}";
+        }
     default:
         return t
     }

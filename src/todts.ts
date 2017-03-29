@@ -54,9 +54,7 @@ function deconstruct(param) {
     case "function":
         return '(' + param.parameters.map(make_type).join(', ') + '): ' + make_type(param.returnType)
     case "object":
-        console.error('NOT IMPLEMENTED Object')
-        // return '(' + param.parameters.join(', ') + '): ' + param.returnType
-        return "Object"
+        return param.types.map(generate_obj).join('|')
     case "array":
         console.error("ARRAYS Not implemented")
     default:
